@@ -319,6 +319,7 @@ body.maldito main{animation:maldito .7s steps(3)}
 .estado{margin:.6rem 0 0;font-family:var(--ficha);font-size:.85rem;color:#7A5A2E;min-height:1.3em}
 .estado.ok{color:#2F6B12}
 .estado.error{color:var(--sangre)}
+.reintentar{background:none;border:0;padding:0;color:var(--sangre);font:inherit;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .acciones{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.1rem}
 .acciones a,.acciones button{border:2px solid #160B10;background:transparent;color:#160B10;cursor:pointer;text-decoration:none;font-family:var(--texto);font-size:.93rem;font-weight:700;padding:.6rem 1rem;transition:background .15s ease,color .15s ease}
 .acciones a:hover,.acciones button:hover{background:#160B10;color:var(--hueso)}
@@ -588,13 +589,10 @@ body.maldito main{animation:maldito .7s steps(3)}
           <div><dt>trae</dt><dd id="pase-trae"></dd></div>
         </dl>
         <div class="sello" aria-hidden="true">Confirmado</div>
-        <p class="pie">Ya estás en la lista. Mándalo al grupo para que sepan que sí vas.</p>
+        <p class="pie">Ya estás en la lista. Agrégalo a tu calendario para que no se te pase.</p>
         <p class="estado" id="estado-registro" aria-live="polite"></p>
         <div class="acciones">
-          <a class="principal" id="btn-grupo" href="#" target="_blank" rel="noopener">Mandarlo al grupo</a>
-          <button type="button" id="btn-copiar-msg">Copiar mensaje</button>
-          <a id="btn-cal" href="#" target="_blank" rel="noopener">Agregar a Google Calendar</a>
-          <button type="button" id="btn-corregir">Corregir</button>
+          <a class="principal" id="btn-cal" href="#" target="_blank" rel="noopener">Agregar a Google Calendar</a>
         </div>
       </div>
     </div>
@@ -631,7 +629,7 @@ body.maldito main{animation:maldito .7s steps(3)}
         <li class="revela" style="--i:0">Sin disfraz invitas las chelas.</li>
         <li class="revela" style="--i:1">No mala copas (en especial tú, Martín xd).</li>
         <li class="revela" style="--i:2">Respeta la casa.</li>
-        <li class="revela" style="--i:3">No drogas ni cigarro (el Yizus es alérgico xd).</li>
+        <li class="revela" style="--i:3">No drogas ni cigarro (el Eithan es alérgico xd).</li>
         <li class="revela" style="--i:4">El que ponga banda antes de las 12 am se va a mimir.</li>
       </ol>
     </div>
@@ -1266,7 +1264,6 @@ abrirFormulario = abrirFormularioImpl;
 
 btnSi.addEventListener("click", function(){ abrirFormulario(true); });
 $("btn-arrepentido").addEventListener("click", function(){ abrirFormulario(true); });
-$("btn-corregir").addEventListener("click", function(){ abrirFormulario(false); });
 $("btn-no").addEventListener("click", function(){
   form.hidden = true; pase.hidden = true; maldicionBox.hidden = false;
   var i; do { i = Math.floor(Math.random()*MALDICIONES.length); } while(i === ultimaMaldicion && MALDICIONES.length > 1);
@@ -1333,7 +1330,6 @@ function mostrarPase(d, animar){
   $("pase-nombre").textContent = d.nombre;
   $("pase-disfraz").textContent = d.disfraz || "sorpresa";
   $("pase-trae").textContent = textoTrae(d.trae, false);
-  $("btn-grupo").href = "https://wa.me/?text=" + encodeURIComponent(msgActual);
   form.hidden = true; maldicionBox.hidden = true; pase.hidden = false;
   btnSi.textContent = "Ya estás en la lista"; btnSi.setAttribute("data-t", "Ya estás en la lista");
   if(animar){
@@ -1362,21 +1358,27 @@ form.addEventListener("submit", function(ev){
   d.registrado = false;
   guardar("brujas-rsvp", d);
   mostrarPase(d, true);
+  enviarRegistro(d);
+});
+function enviarRegistro(d){
   pintarEstado("", "Anotándote en la lista…");
   registrar(d).then(function(){
     d.registrado = true; guardar("brujas-rsvp", d);
     pintarEstado("ok", "✓ Quedaste registrado en la lista.");
   }, function(){
-    pintarEstado("error", "No se pudo registrar solo. Dale a «Mandarlo al grupo» para que sí cuente.");
+    pintarEstado("error", "No se pudo registrar, revisa tu internet. ");
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "reintentar"; b.textContent = "Intentar de nuevo";
+    b.addEventListener("click", function(){ enviarRegistro(d); });
+    $("estado-registro").appendChild(b);
   });
-});
+}
 $("nombre").addEventListener("input", function(){ this.classList.remove("error"); });
 form.querySelector('input[name=trae][value="pura actitud"]').addEventListener("change", function(){
   var roast = $("roast");
   if(this.checked){ roast.hidden = false; reiniciar(roast, "salta"); sonido.fracaso(); }
   else roast.hidden = true;
 });
-$("btn-copiar-msg").addEventListener("click", function(){ copiar(msgActual, "Mensaje copiado, pégalo en el grupo"); });
 $("btn-liga").addEventListener("click", function(){ copiar(location.href, "Liga copiada"); });
 
 /* si ya había confirmado en este dispositivo */
@@ -1392,6 +1394,7 @@ $("btn-liga").addEventListener("click", function(){ copiar(location.href, "Liga 
   $("roast").hidden = g.trae.indexOf("pura actitud") < 0;
   mostrarPase(g, false);
   if(g.registrado) pintarEstado("ok", "✓ Ya estás registrado en la lista.");
+  else enviarRegistro(g); // si la vez pasada falló, lo vuelve a intentar solo
 })();
 
 })();
